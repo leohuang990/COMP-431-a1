@@ -2,7 +2,7 @@
 #                                 #
 #     John Moore - COMP 431       #
 #   Starter server code for HW1   #
-#          Version 1.1            #
+#          Version 1.2            #
 ###################################
 
 import os
