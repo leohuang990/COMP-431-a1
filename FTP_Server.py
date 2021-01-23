@@ -2,7 +2,7 @@
 #                                 #
 #     John Moore - COMP 431       #
 #   Starter server code for HW1   #
-#                                 #
+#          Version 1.1            #
 ###################################
 
 import os
@@ -46,7 +46,7 @@ def read_commands():
         # Check to make sure there are tokens in the line, and assign command_name
         command_name = tokens[0].upper() if len(tokens) > 0 else "UNKNOWN"       # Commands are case-insensitive
         # Check first token in list to see if it matches any valid commands
-        if command_name in command_list:
+        if command_name in command_list and not command[0].isspace():
             if command_name in expected_commands:
                 #############################################################
                 #  This is intended to delegate command processing to       #
