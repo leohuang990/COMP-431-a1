@@ -7,7 +7,7 @@
 
 import os
 import sys
-
+import shutil
 # Define important ASCII character decimal representations
 # These are helpful for defining various command grammars  
 # Use ord(char) to get decimal ascii code for char
@@ -16,8 +16,8 @@ lf = ord('\n')  # = 10
 crlf_vals = [cr, lf]
 
 # Define known server commands (case insensitive). Add to this as commands are added
-command_list = ["USER", "PASS", "TYPE", "SYST", "NOOP"]
-# , "QUIT", "PORT", "RETR"
+command_list = ["USER", "PASS", "TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"]
+
 # Manage valid response messages for every command
 valid_responses = {
     "USER" : "331 Guest access OK, send password.\r\n",
@@ -25,8 +25,8 @@ valid_responses = {
     "TYPEI" : "200 Type set to I.\r\n",
     "SYST" : "215 UNIX Type: L8.\r\n",
     "NOOP" : "200 Command OK.\r\n",
-    "PASS": "230 Guest login OK.\r\n"
-    # "RETR" : "\r\n",
+    "PASS": "230 Guest login OK.\r\n",
+    "QUIT" : "200 Command OK.\r\n"
     # "RETR" : "\r\n",
     # "RETR" : "\r\n",
     # "RETR" : "\r\n",
@@ -44,6 +44,8 @@ def read_commands():
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
     # Keep track of the expected commands, initially only "USER" and "QUIT" are valid commands
     expected_commands = ["USER", "QUIT"]
+    success_login = False
+    port = False
     for command in sys.stdin:       # Iterate over lines from input stream until EOF is found
         # Echo the line of input
         sys.stdout.write(command)
@@ -70,10 +72,14 @@ def read_commands():
                     result, expected_commands= parse_type(tokens)
                 elif command_name == "NOOP":         
                     result, expected_commands = parse_noop(command)
-                # elif command_name == "QUIT":         
-                #     result, expected_commands = parse_quit(tokens)
+                elif command_name == "PORT":         
+                    result, expected_commands, info = parse_port(tokens)
                 elif command_name == "SYST":         
                     result, expected_commands = parse_syst(command)
+                elif command_name == "QUIT":         
+                    result, dumb = parse_quit(command)
+                elif command_name == "RETR":         
+                    result, expected_commands, address = parse_retr(command)
                 
 
                 ##################################################
@@ -87,8 +93,29 @@ def read_commands():
                         
                         if command_name == "TYPE":
                             sys.stdout.write(valid_responses[command_name+result])
+                        elif command_name == "RETR":
+                            port = False
+                            sys.stdout.write("150 File status okay.\r\n")
+                            sys.stdout.write("250 Requested file action completed.\r\n")
+                            source = address
+                            destination = "retr_files" + '/' + source
+                            shutil.copyfile(source, destination)
+                            #os.rename()
+                        elif command_name == "PORT":
+                            port = True
+                            
+                            sys.stdout.write(f'200 Port command successful ({info}).\r\n')
+                        elif command_name == "PASS":
+                            success_login = True
+                            sys.stdout.write(valid_responses[command_name])
+                        elif command_name == "QUIT":
+                            sys.stdout.write(valid_responses[command_name])
+                            sys.exit()
                         else:
                             sys.stdout.write(valid_responses[command_name])
+                        
+                        if port:
+                            expected_commands.append('RETR')
                         
                     else:
                         sys.stdout.write("501 Syntax error in parameter.\r\n")
@@ -96,11 +123,23 @@ def read_commands():
                         #  Update expected_commands list if incorrect CRLF   #
                         #  changes the possible commands that can come next  #     
                         ######################################################
-                        if command_name == "USER":
+                        
+                        if command_name == "USER" or "PASS":
                             expected_commands = ["USER", "QUIT"]
+                        elif command_name == "QUIT":
+                            if not success_login:
+                                expected_commands = ["USER", "QUIT"]
+                            elif not port:
+                                ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+                            else:
+                                ["TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"]
             else:
                 # Out of order command received
-                sys.stdout.write("503 Bad sequence of commands.\r\n")
+                if not success_login:
+                    sys.stdout.write("530 Not logged in.\r\n")
+                    expected_commands = ["QUIT", "USER"]
+                else:
+                    sys.stdout.write("503 Bad sequence of commands.\r\n")
         else:
             # No valid command was input
             sys.stdout.write("500 Syntax error, command unrecognized.\r\n")
@@ -135,17 +174,17 @@ def parse_pass(tokens):
                     return "501 Syntax error in parameter.\r\n", ["USER", "QUIT"]
     return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
 
-def parse_noop(tokens):
-    if tokens.upper() == "NOOP":
+def parse_noop(command):
+    if command[:-2].upper() == "NOOP":
         return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
     else:
-        return "500 Syntax error, command unrecognized.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
 
-def parse_syst(tokens):
-    if tokens.upper() == "SYST":
+def parse_syst(command):
+    if command[:-2].upper() == "SYST":
         return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
     else:
-        return "500 Syntax error, command unrecognized.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
 
 
 def parse_type(tokens):
@@ -155,6 +194,36 @@ def parse_type(tokens):
         if tokens[1] == "A" or tokens[1] == "I":
             return  tokens[1] , ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]  
         return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+
+def parse_quit(command):
+    if command[:-2].upper() == "QUIT":
+        return "ok", []
+    else:
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+
+def parse_port(tokens):
+    temp = tokens[1].split(',')
+    if len(tokens) > 2 or len(temp) != 6:
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], ''
+    for num in temp:
+        if not num.isdigit():
+            return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
     
+    return 'ok', ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], f'{temp[0]}.{temp[1]}.{temp[2]}.{temp[3]},{int(temp[4])*256 + int(temp[5])}'
+def parse_retr(command):
+    tokens = command.split()
+    if len(tokens) == 1:
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"], ''
+    else:
+        # Iterate through remaining tokens and check that no invalid usernames are entered
+        for token in tokens[1:]:
+            for char in token:
+                if ord(char) > 127 or ord(char) in crlf_vals:     # Byte values > 127 along with <CRLF> are not valid for usernames
+                    return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"], ''
+    return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], f'{command[5:-2]}'
+
+
+
+
 
 read_commands()
