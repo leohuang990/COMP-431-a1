@@ -26,15 +26,15 @@ sys.stdout.write("NOOP\r\n")                    # Command valid
 sys.stdout.write("NOOP \r\n")                   # Command invalid
 sys.stdout.write("noop\r\n")                    # Command valid
 
-# PORT
-sys.stdout.write("PORT 1,2,3,4,5\r\n")          # Missing a port number
-sys.stdout.write("PORT 1, 2, 3, 4, 5, 6\r\n")   # Extra spaces (command invalid)
-sys.stdout.write("PORT 1,2,3,4,5,6\r\n")        # Command valid
+# # PORT
+# sys.stdout.write("PORT 1,2,3,4,5\r\n")          # Missing a port number
+# sys.stdout.write("PORT 1, 2, 3, 4, 5, 6\r\n")   # Extra spaces (command invalid)
+# sys.stdout.write("PORT 1,2,3,4,5,6\r\n")        # Command valid
 
-# RETR
-sys.stdout.write("RETR MakeInput1.py\r\n")        # Command valid
-sys.stdout.write("RETR MakeInput2.py\r\n")        # Command valid
+# # RETR
+# sys.stdout.write("RETR MakeInput1.py\r\n")        # Command valid
+# sys.stdout.write("RETR MakeInput2.py\r\n")        # Command valid
 
-# QUIT
-sys.stdout.write("quit\n")                      # Command invalid
-sys.stdout.write("QUIT\r\n")                    # Command valid
+# # QUIT
+# sys.stdout.write("quit\n")                      # Command invalid
+# sys.stdout.write("QUIT\r\n")                    # Command valid
