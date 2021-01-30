@@ -1,0 +1,17 @@
+220 COMP 431 FTP server ready.
+user anonymous
+ccc user anonymous
+
+minus 1 10
+minus 2 13
+True
+331 Guest access OK, send password.
+PASS word
+ccc PASS word
+
+minus 1 10
+minus 2 13
+True
+230 Guest login OK.
+
+500 Syntax error, command unrecognized.

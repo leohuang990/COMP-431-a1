@@ -16,11 +16,20 @@ lf = ord('\n')  # = 10
 crlf_vals = [cr, lf]
 
 # Define known server commands (case insensitive). Add to this as commands are added
-command_list = ["USER"]
-
+command_list = ["USER", "PASS", "TYPE", "SYST", "NOOP"]
+# , "QUIT", "PORT", "RETR"
 # Manage valid response messages for every command
 valid_responses = {
     "USER" : "331 Guest access OK, send password.\r\n",
+    "TYPEA" : "200 Type set to A.\r\n",
+    "TYPEI" : "200 Type set to I.\r\n",
+    "SYST" : "215 UNIX Type: L8.\r\n",
+    "NOOP" : "200 Command OK.\r\n",
+    "PASS": "230 Guest login OK.\r\n"
+    # "RETR" : "\r\n",
+    # "RETR" : "\r\n",
+    # "RETR" : "\r\n",
+    # "RETR" : "\r\n",
 }
 
 ##############################################################################################
@@ -33,13 +42,12 @@ valid_responses = {
 def read_commands():
     # FTP service always begins with "220 COMP 431 FTP server ready.\r\n"
     sys.stdout.write("220 COMP 431 FTP server ready.\r\n")
-
     # Keep track of the expected commands, initially only "USER" and "QUIT" are valid commands
     expected_commands = ["USER", "QUIT"]
     for command in sys.stdin:       # Iterate over lines from input stream until EOF is found
         # Echo the line of input
         sys.stdout.write(command)
-
+        
         # Split command into its tokens and parse relevant command
         tokens = command.split()    # Assume tokens are delimited by <SP>, <CR>, <LF>, or <CRLF>
 
@@ -56,16 +64,32 @@ def read_commands():
                 #############################################################
                 if command_name == "USER":         
                     result, expected_commands = parse_user(tokens)
+                elif command_name == "PASS":         
+                    result, expected_commands = parse_pass(tokens)
+                elif command_name == "TYPE":         
+                    result, expected_commands= parse_type(tokens)
+                elif command_name == "NOOP":         
+                    result, expected_commands = parse_noop(command)
+                # elif command_name == "QUIT":         
+                #     result, expected_commands = parse_quit(tokens)
+                elif command_name == "SYST":         
+                    result, expected_commands = parse_syst(command)
+                
 
                 ##################################################
                 #  After command processing, the following code  #
                 #  prints the appropriate response message       #
                 ##################################################
-                if result != "ok":
+                if len(result) > 3:
                     sys.stdout.write(result)
                 else:
                     if ord(command[-1]) == lf and ord(command[-2]) == cr:       # The ord(char) function gives decimal ascii code of char
-                        sys.stdout.write(valid_responses[command_name])
+                        
+                        if command_name == "TYPE":
+                            sys.stdout.write(valid_responses[command_name+result])
+                        else:
+                            sys.stdout.write(valid_responses[command_name])
+                        
                     else:
                         sys.stdout.write("501 Syntax error in parameter.\r\n")
                         ######################################################
@@ -100,5 +124,37 @@ def parse_user(tokens):
                 if ord(char) > 127 or ord(char) in crlf_vals:     # Byte values > 127 along with <CRLF> are not valid for usernames
                     return "501 Syntax error in parameter.\r\n", ["USER", "QUIT"]
     return "ok", ["USER", "PASS", "QUIT"]      # If the function makes it here, the input adheres to the grammar for this command
+
+def parse_pass(tokens):
+    if len(tokens) == 1:
+        return "501 Syntax error in parameter.\r\n", ["USER", "QUIT"]
+    else:
+        for token in tokens[1:]:
+            for char in token:
+                if ord(char) > 127 or ord(char) in crlf_vals:     
+                    return "501 Syntax error in parameter.\r\n", ["USER", "QUIT"]
+    return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+
+def parse_noop(tokens):
+    if tokens.upper() == "NOOP":
+        return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+    else:
+        return "500 Syntax error, command unrecognized.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+
+def parse_syst(tokens):
+    if tokens.upper() == "SYST":
+        return "ok", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+    else:
+        return "500 Syntax error, command unrecognized.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+
+
+def parse_type(tokens):
+    if len(tokens) == 1:
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+    else:
+        if tokens[1] == "A" or tokens[1] == "I":
+            return  tokens[1] , ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]  
+        return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+    
 
 read_commands()
