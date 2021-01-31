@@ -96,16 +96,16 @@ def read_commands():
                             sys.stdout.write(valid_responses[command_name+result])
                         elif command_name == "RETR":
                             source = address
-                            destination = "retr_files" + '/' + source
-                            try:
-                                shutil.copyfile(source, destination)
-                                file_num = file_num + 1
-                                os.rename(destination, "retr_files" + '/' + 'file' + file_num)
+                            file_num = file_num + 1
+                            destination = "retr_files" + '/' + 'file' + f'{file_num}'
+                            if os.access(source, os.F_OK):
+                                shutil.copy(source, destination)
                                 port = False
                                 sys.stdout.write("150 File status okay.\r\n")
                                 sys.stdout.write("250 Requested file action completed.\r\n")
-                            except:
+                            else:
                                 sys.stdout.write(f'550 File not found or access denied.\r\n')
+                          
                             
                             
                             
@@ -137,9 +137,9 @@ def read_commands():
                             if not success_login:
                                 expected_commands = ["USER", "QUIT"]
                             elif not port:
-                                ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+                                expected_commands = ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
                             else:
-                                ["TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"]
+                                expected_commands = ["TYPE", "SYST", "NOOP", "QUIT", "PORT", "RETR"]
             else:
                 # Out of order command received
                 if not success_login:
