@@ -46,6 +46,7 @@ def read_commands():
     expected_commands = ["USER", "QUIT"]
     success_login = False
     port = False
+    file_num = 0
     for command in sys.stdin:       # Iterate over lines from input stream until EOF is found
         # Echo the line of input
         sys.stdout.write(command)
@@ -94,16 +95,22 @@ def read_commands():
                         if command_name == "TYPE":
                             sys.stdout.write(valid_responses[command_name+result])
                         elif command_name == "RETR":
-                            port = False
-                            sys.stdout.write("150 File status okay.\r\n")
-                            sys.stdout.write("250 Requested file action completed.\r\n")
                             source = address
                             destination = "retr_files" + '/' + source
-                            shutil.copyfile(source, destination)
-                            #os.rename()
+                            try:
+                                shutil.copyfile(source, destination)
+                                file_num = file_num + 1
+                                os.rename(destination, "retr_files" + '/' + 'file' + file_num)
+                                port = False
+                                sys.stdout.write("150 File status okay.\r\n")
+                                sys.stdout.write("250 Requested file action completed.\r\n")
+                            except:
+                                sys.stdout.write(f'550 File not found or access denied.\r\n')
+                            
+                            
+                            
                         elif command_name == "PORT":
                             port = True
-                            
                             sys.stdout.write(f'200 Port command successful ({info}).\r\n')
                         elif command_name == "PASS":
                             success_login = True
@@ -207,7 +214,7 @@ def parse_port(tokens):
         return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], ''
     for num in temp:
         if not num.isdigit():
-            return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"]
+            return "501 Syntax error in parameter.\r\n", ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], ''
     
     return 'ok', ["TYPE", "SYST", "NOOP", "QUIT", "PORT"], f'{temp[0]}.{temp[1]}.{temp[2]}.{temp[3]},{int(temp[4])*256 + int(temp[5])}'
 def parse_retr(command):

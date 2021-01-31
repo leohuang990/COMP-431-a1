@@ -1,0 +1,9 @@
+220 COMP 431 FTP server ready.
+USER sagar
+331 Guest access OK, send password.
+PASS patel
+230 Guest login OK.
+PORT 10,1,1,0,12,255
+501 Syntax error in parameter.
+RETR ls
+503 Bad sequence of commands.
