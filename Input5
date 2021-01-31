@@ -1,4 +1,0 @@
-USER sagar
-PASS patel
-PORT 10,1,1,0,12,255
-RETR ls
