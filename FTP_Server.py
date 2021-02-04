@@ -104,6 +104,7 @@ def read_commands():
                                 sys.stdout.write("150 File status okay.\r\n")
                                 sys.stdout.write("250 Requested file action completed.\r\n")
                             else:
+                                file_num = file_num - 1
                                 sys.stdout.write(f'550 File not found or access denied.\r\n')
                           
                             

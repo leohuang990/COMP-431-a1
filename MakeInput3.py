@@ -1,7 +1,10 @@
 import sys
 
-sys.stdout.write(f"USER anonymous\r\n")
-sys.stdout.write(f"user anonymous\r\n")
-sys.stdout.write(f"QUIT\r\n")
-sys.stdout.write(f"USER\r\n")   # error
-sys.stdout.write(f"type I\r\n") # error
+sys.stdout.write("USER sagar\r\n")
+sys.stdout.write("PASS patel\r\n")
+sys.stdout.write("PORT 10,1,1,0,12,255\r\n")
+sys.stdout.write("RETR this_file_probably_does_not_exist\r\n")
+sys.stdout.write("RETR some_dir/neither_does_this_one\r\n")
+sys.stdout.write("RETR ls\r\n")
+sys.stdout.write("PORT 10,1,1,0,12,255\r\n")
+sys.stdout.write("RETR does_not_exist_hopefully\r\n")
