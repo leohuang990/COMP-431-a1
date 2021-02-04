@@ -1,8 +1,0 @@
-USER sagar
-PASS patel
-PORT 10,1,1,0,12,255
-RETR this_file_probably_does_not_exist
-RETR some_dir/neither_does_this_one
-RETR ls
-PORT 10,1,1,0,12,255
-RETR does_not_exist_hopefully
